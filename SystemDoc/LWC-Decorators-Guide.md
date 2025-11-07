@@ -2,7 +2,9 @@
 
 ## Overview
 
-This guide explains the purpose and usage of `@api` and `@wire` decorators in Lightning Web Components, with examples from the `contactList` component.
+This guide explains the purpose and usage of `@api` and `@wire` decorators in Lightning Web Components. See the `contactList` component for a complete example: [`force-app/main/default/lwc/contactList/contactList.js`](../force-app/main/default/lwc/contactList/contactList.js)
+
+**Official Documentation:** [Salesforce LWC Decorators](https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.reference_decorators)
 
 ---
 
@@ -11,65 +13,13 @@ This guide explains the purpose and usage of `@api` and `@wire` decorators in Li
 ### Purpose
 Makes a property or method **public** - accessible from outside the component.
 
-### Syntax
-```javascript
-import { LightningElement, api } from 'lwc';
-
-export default class MyComponent extends LightningElement {
-    @api
-    publicProperty = 'value';
-    
-    @api
-    publicMethod() {
-        // method logic
-    }
-}
-```
-
 ### Use Cases
 
-#### 1. **Component Configuration**
-Allow parent components to pass in configuration:
-
-```javascript
-// Child component
-@api recordId;
-@api isReadOnly = false;
-```
-
-```html
-<!-- Parent component -->
-<c-my-component record-id={contactId} is-read-only></c-my-component>
-```
-
-#### 2. **Testing**
-Make properties accessible in Jest tests:
-
-```javascript
-// Component
-@api
-columns = [
-    { label: 'First Name', fieldName: 'FirstName' },
-    { label: 'Last Name', fieldName: 'LastName' }
-];
-```
-
-```javascript
-// Test
-it('has correct columns', () => {
-    const element = createElement('c-my-component', { is: MyComponent });
-    expect(element.columns).toHaveLength(2);  // ✅ Works
-});
-```
-
-#### 3. **Reusable Components**
-Create flexible components that adapt to different contexts:
-
-```javascript
-@api title = 'Default Title';
-@api showIcon = true;
-@api variant = 'base';
-```
+| Use Case | Description |
+|----------|-------------|
+| **Component Configuration** | Allow parent components to pass in values |
+| **Testing** | Make properties accessible in Jest tests |
+| **Reusable Components** | Create flexible, configurable components |
 
 ### Public vs Private
 
@@ -86,72 +36,17 @@ Create flexible components that adapt to different contexts:
 ### Purpose
 Connects your component to **reactive data** from Salesforce - automatically updates when data changes.
 
-### Syntax
+**Official Documentation:** [Wire Service Documentation](https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.data_wire_service_about)
 
-#### Wire to a Function (Most Common)
-```javascript
-import { LightningElement, wire } from 'lwc';
-import getContacts from '@salesforce/apex/ContactController.getContacts';
+### Wire Adapter Types
 
-export default class MyComponent extends LightningElement {
-    contacts;
-    error;
-    
-    @wire(getContacts)
-    wiredContacts({ error, data }) {
-        if (data) {
-            this.contacts = data;
-            this.error = undefined;
-        } else if (error) {
-            this.error = error;
-            this.contacts = undefined;
-        }
-    }
-}
-```
+| Type | Use Case | Example |
+|------|----------|---------|
+| **Apex Methods** | Server-side data | `@wire(getContacts)` |
+| **LDS Adapters** | Standard Salesforce data | `@wire(getRecord)` |
+| **Reactive Variables** | Dynamic parameters | `@wire(getRecord, { recordId: '$recordId' })` |
 
-#### Wire to a Property (Simple Cases)
-```javascript
-@wire(getContacts) contacts;
-```
-
-### Use Cases
-
-#### 1. **Apex Methods**
-Call server-side Apex methods:
-
-```javascript
-import getContacts from '@salesforce/apex/ContactController.getContacts';
-
-@wire(getContacts)
-wiredContacts({ error, data }) {
-    // Handle response
-}
-```
-
-#### 2. **Lightning Data Service (LDS)**
-Read Salesforce records using standard adapters:
-
-```javascript
-import { getRecord } from 'lightning/uiRecordApi';
-
-@wire(getRecord, { recordId: '$recordId', fields: FIELDS })
-wiredRecord({ error, data }) {
-    // Handle response
-}
-```
-
-#### 3. **Dynamic Parameters**
-Pass reactive parameters using `$` prefix:
-
-```javascript
-@api recordId;  // Public property
-
-@wire(getRecord, { recordId: '$recordId' })  // $ makes it reactive
-wiredRecord({ error, data }) {
-    // Automatically re-runs when recordId changes
-}
-```
+**See complete example:** [`force-app/main/default/lwc/wireServiceExample/wireServiceExample.js`](../force-app/main/default/lwc/wireServiceExample/wireServiceExample.js)
 
 ### Benefits of `@wire`
 
@@ -163,102 +58,22 @@ wiredRecord({ error, data }) {
 | **Error handling** | Built-in error/data separation |
 | **Performance** | Minimizes server calls |
 
-### Manual Apex Calls vs `@wire`
-
-#### ❌ Manual Approach (Imperative)
-```javascript
-import { LightningElement } from 'lwc';
-import getContacts from '@salesforce/apex/ContactController.getContacts';
-
-export default class MyComponent extends LightningElement {
-    contacts;
-    
-    connectedCallback() {
-        getContacts()
-            .then(result => {
-                this.contacts = result;
-            })
-            .catch(error => {
-                console.error(error);
-            });
-    }
-}
-```
-
-**Downsides:**
-- No caching
-- No automatic updates
-- More code to write
-- Must manually handle component lifecycle
-
-#### ✅ `@wire` Approach (Declarative)
-```javascript
-import { LightningElement, wire } from 'lwc';
-import getContacts from '@salesforce/apex/ContactController.getContacts';
-
-export default class MyComponent extends LightningElement {
-    @wire(getContacts)
-    contacts;
-}
-```
-
-**Benefits:**
-- ✅ Automatic caching
-- ✅ Automatic updates
-- ✅ Less code
-- ✅ Follows Lightning best practices
+**Trailhead:** [Work with Salesforce Data](https://trailhead.salesforce.com/content/learn/modules/lightning-web-components-and-salesforce-data)
 
 ---
 
 ## Real Example: contactList Component
 
-```javascript
-import { LightningElement, wire, api } from 'lwc';
-import getContacts from '@salesforce/apex/ContactController.getContacts';
-import FIRST_NAME_FIELD from '@salesforce/schema/Contact.FirstName';
-import LAST_NAME_FIELD from '@salesforce/schema/Contact.LastName';
-import EMAIL_FIELD from '@salesforce/schema/Contact.Email';
-import { reduceErrors } from 'c/ldsUtils';
-
-export default class ContactList extends LightningElement {
-    contacts;
-    error;
-
-    // @api makes columns accessible to parent components and tests
-    @api
-    columns = [
-        { label: 'First Name', fieldName: FIRST_NAME_FIELD.fieldApiName },
-        { label: 'Last Name', fieldName: LAST_NAME_FIELD.fieldApiName },
-        { label: 'Email', fieldName: EMAIL_FIELD.fieldApiName }
-    ];
-
-    // @wire connects to Apex method and handles reactivity
-    @wire(getContacts)
-    wiredContacts({ error, data }) {
-        if (data) {
-            this.contacts = data;
-            this.error = undefined;
-        } else if (error) {
-            this.error = error;
-            this.contacts = undefined;
-        }
-    }
-
-    // Getter processes error for display
-    get errors() {
-        return reduceErrors(this.error);
-    }
-}
-```
+**See full implementation:** [`force-app/main/default/lwc/contactList/contactList.js`](../force-app/main/default/lwc/contactList/contactList.js)
 
 ### Why Use Each Decorator?
 
-**`@api columns` (Line 12-17)**
+**`@api columns`**
 - ✅ Parent components can customize columns if needed
 - ✅ Tests can verify columns are configured correctly
 - ✅ Makes component more flexible and reusable
 
-**`@wire(getContacts)` (Line 19-28)**
+**`@wire(getContacts)`**
 - ✅ Automatically fetches contacts when component loads
 - ✅ Uses Lightning Data Service caching
 - ✅ Re-fetches if contacts are updated elsewhere
@@ -287,19 +102,12 @@ Defines the public contract of your component:
 - **Public** (`@api`): What others can access
 - **Private** (no decorator): Internal implementation
 
-**Analogy:** A TV remote
-- Public buttons (`@api`): Power, Volume - users can press
-- Private circuits: Internal wiring - users can't touch
+**Analogy:** A TV remote - public buttons users can press vs. private internal circuits
 
 ### 2. **Reactive Programming (`@wire`)**
-Implements the Observer Pattern:
-- Component observes data sources
-- Automatically reacts when data changes
-- No manual polling needed
+Implements the Observer Pattern - component observes data sources and automatically reacts when data changes.
 
-**Analogy:** News subscription
-- Old way: Check website every hour
-- `@wire` way: Get notified automatically
+**Analogy:** News subscription - get notified automatically instead of checking manually
 
 ### 3. **Separation of Concerns**
 - `@api` = **Interface** (how component talks to outside)
@@ -332,75 +140,24 @@ Implements the Observer Pattern:
 
 ## Common Patterns
 
-### Pattern 1: Public Reactive Parameter
-```javascript
-@api recordId;  // Parent can set this
+**Pattern 1: Public Reactive Parameter**  
+See: [`force-app/main/default/lwc/wireServiceExample/wireServiceExample.js`](../force-app/main/default/lwc/wireServiceExample/wireServiceExample.js) (lines 8-15)
 
-@wire(getRecord, { recordId: '$recordId' })  // React to changes
-wiredRecord({ error, data }) {
-    // Handle response
-}
-```
+**Pattern 2: Getter for Computed Values**  
+See: [`force-app/main/default/lwc/contactList/contactList.js`](../force-app/main/default/lwc/contactList/contactList.js) (lines 30-32)
 
-### Pattern 2: Getter for Computed Values
-```javascript
-contacts;
-error;
-
-@wire(getContacts)
-wiredContacts({ error, data }) {
-    this.contacts = data;
-    this.error = error;
-}
-
-get hasContacts() {
-    return this.contacts && this.contacts.length > 0;
-}
-```
-
-### Pattern 3: Error Handling with Utility
-```javascript
-import { reduceErrors } from 'c/ldsUtils';
-
-@wire(getContacts)
-wiredContacts({ error, data }) {
-    if (error) {
-        this.error = error;
-    }
-}
-
-get errors() {
-    return reduceErrors(this.error);  // Process for display
-}
-```
+**Pattern 3: Error Handling with Utility**  
+See: [`force-app/main/default/lwc/contactList/contactList.js`](../force-app/main/default/lwc/contactList/contactList.js) (lines 19-28, 30-32)
 
 ---
 
 ## Testing Considerations
 
-### Testing `@api` Properties
-```javascript
-it('can access public columns property', () => {
-    const element = createElement('c-contact-list', { is: ContactList });
-    document.body.appendChild(element);
-    
-    // ✅ Works because @api makes it public
-    expect(element.columns).toHaveLength(3);
-});
-```
+**Testing `@api` Properties:**  
+See: [`force-app/main/default/lwc/contactList/__tests__/contactList.test.js`](../force-app/main/default/lwc/contactList/__tests__/contactList.test.js) (lines 27-41)
 
-### Testing `@wire` Adapters
-Testing wire adapters requires mocking - simplified approach:
-```javascript
-// Test the component structure, not the wire adapter
-it('renders lightning-card', () => {
-    const element = createElement('c-contact-list', { is: ContactList });
-    document.body.appendChild(element);
-    
-    const card = element.shadowRoot.querySelector('lightning-card');
-    expect(card).not.toBeNull();
-});
-```
+**Testing `@wire` Adapters:**  
+See: [`SystemDoc/Wire-Service-Testing-Guide.md`](./Wire-Service-Testing-Guide.md) for complete wire service testing guide
 
 ---
 
@@ -409,10 +166,11 @@ it('renders lightning-card', () => {
 - [Salesforce LWC Decorators Guide](https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.reference_decorators)
 - [Wire Service Documentation](https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.data_wire_service_about)
 - [Lightning Data Service Guide](https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.data_ui_api)
+- **Trailhead:** [Lightning Web Components Basics](https://trailhead.salesforce.com/content/learn/modules/lightning-web-components-basics)
 
 ---
 
 **Last Updated:** November 7, 2025  
 **Project:** sculliwag-dev  
-**Component Examples:** contactList, contactCreator
+**Component Examples:** contactList, wireServiceExample
 
